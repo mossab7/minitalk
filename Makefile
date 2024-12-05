@@ -1,43 +1,37 @@
 SERVER = server
 CLIENT = client
-FTPRINTF = libftprintf.a
-FTPRINTF_DIR = includes/ftprintf
-FTPRINTFSRC = ft_printf.c ft_printf_number_utilities.c \
-              ft_printf_handlers.c ft_printf_utilities.c \
-              ft_printf_set_flags.c
+LIBFT = libft.a
+LIBFT_DIR = includes/libft
 CLIENTBONUSSRC = client_bonus.c
 SERVERBONUSSRC = server_bonus.c
 CLIENTSRC = client.c
 SERVERSRC = server.c
 
 CC = cc
+
 CFLAGS = -Wall -Wextra -Werror
-FTPRINTFOBJS = $(FTPRINTFSRC:%.c=$(FTPRINTF_DIR)/%.o)
 
-all: $(SERVER) $(CLIENT)
+all: $(LIBFT) $(SERVER) $(CLIENT)
 
-$(FTPRINTF_DIR)/%.o: $(FTPRINTF_DIR)/%.c
-	$(CC) $(CFLAGS) -c $< -o $@
+$(LIBFT):
+	make -C $(LIBFT_DIR)
 
-$(FTPRINTF): $(FTPRINTFOBJS)
-	ar rcs $(FTPRINTF) $(FTPRINTFOBJS)
+$(SERVER): $(SERVERSRC)
+	$(CC) $(CFLAGS) $(SERVERSRC) -o $(SERVER) -Lincludes/libft -lft
 
-$(SERVER): $(SERVERSRC) $(FTPRINTF)
-	$(CC) $(CFLAGS) $(SERVERSRC) -o $(SERVER) -L. -lftprintf
-
-$(CLIENT): $(CLIENTSRC) $(FTPRINTF)
-	$(CC) $(CFLAGS) $(CLIENTSRC) -o $(CLIENT) -L. -lftprintf
+$(CLIENT): $(CLIENTSRC)
+	$(CC) $(CFLAGS) $(CLIENTSRC) -o $(CLIENT) -Lincludes/libft -lft
 
 bonus: $(SERVER)_bonus $(CLIENT)_bonus
 
-$(SERVER)_bonus: $(SERVERBONUSSRC) $(FTPRINTF)
-	$(CC) $(CFLAGS) $(SERVERBONUSSRC) -o $(SERVER) -L. -lftprintf
+$(SERVER)_bonus: $(SERVERBONUSSRC)
+	$(CC) $(CFLAGS) $(SERVERBONUSSRC) -o $(SERVER) -Lincludes/libft -lft
 
-$(CLIENT)_bonus: $(CLIENTBONUSSRC) $(FTPRINTF)
-	$(CC) $(CFLAGS) $(CLIENTBONUSSRC) -o $(CLIENT) -L. -lftprintf
+$(CLIENT)_bonus: $(CLIENTBONUSSRC)
+	$(CC) $(CFLAGS) $(CLIENTBONUSSRC) -o $(CLIENT) -Lincludes/libft -lft
 
 clean:
-	rm -f $(FTPRINTFOBJS) $(FTPRINTF)
+	make -C $(LIBFT_DIR) clean
 
 fclean: clean
 	rm -f $(SERVER) $(CLIENT)

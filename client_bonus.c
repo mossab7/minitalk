@@ -1,84 +1,113 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   client_bonus.c                                     :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: mbouhia <marvin@42.fr>                     +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/12/02 15:40:14 by mbouhia           #+#    #+#             */
+/*   Updated: 2024/12/03 20:49:33 by mbouhia          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "includes/ftprintf/ft_printf.h"
+#include "minitalk_bonus.h"
 #include <signal.h>
 
-size_t	len;
+int		g_state_flag;
 
-void ft_check(int signal)
+void	set_state_flag(int signal)
 {
-        unsigned int            bar_width;
-        unsigned int            pos;
-        unsigned int            percentage;
-        unsigned int            i;
-        char                    *color;
-        static unsigned int     count;
-        
-	if(signal == SIGUSR1)
-                color = "\x1b[32m";
-        else
-                color = "\x1b[31m";
-        bar_width = 50;
-        count++;
-        percentage = (count * 100) / len;
-        pos = (percentage * bar_width) / 100;
-        ft_printf("%s[",color);
-        i = 0;
-        while(i++ < pos)
-                ft_printf("%s#",color);
-        while(i++ < bar_width)
-                ft_printf ("%s ",color);
-        ft_printf("%s] %d%%\r",color,percentage);
-        if(signal == SIGUSR2)
-                return;
+	(void)signal;
+	g_state_flag = 1;
 }
 
-int    send_signal(char c, pid_t pid)
+void	ft_check(int signal, size_t len)
 {
-    int	bit;
-    int	return_value;
-    bit = 0;
-    while (bit < 8)
-    {
-        if((c & (1 << bit)) != 0)
-            return_value = kill(pid,SIGUSR1);
-        else
-            return_value = kill(pid,SIGUSR2);
-	if(return_value == -1)
-		break;
-        usleep(100);
-        bit++;
-    }
-    return (return_value);
+	t_bar				bar;
+	unsigned int		i;
+	char				*color;
+	static unsigned int	count;
+
+	if (signal == SIGUSR1)
+		color = "\x1b[32m";
+	else
+		color = "\x1b[31m";
+	bar.bar_width = 50;
+	count++;
+	bar.percentage = (count * 100) / len;
+	bar.pos = (bar.percentage * bar.bar_width) / 100;
+	ft_printf("%s[", color);
+	i = 0;
+	while (i++ < bar.pos)
+		ft_printf("%s#", color);
+	while (i++ < bar.bar_width)
+		ft_printf("%s ", color);
+	ft_printf("%s] %d%%\r", color, bar.percentage);
+	if (signal == SIGUSR2)
+		return ;
 }
 
-int main(int argc, char **argv)
+int	send_bits(char c, pid_t pid)
 {
-    int     	i;
-    pid_t   	pid;
-    int		return_value;
-    
-    len = strlen(argv[2]) + 1;
-    if(argc != 3)
-    {
-        printf("\x1b[31mwrong format <./client pid message>\n");
-        return (0);
-    }
-    i = 0;
-    pid = atoi(argv[1]);
-    signal(SIGUSR1,ft_check);
-    signal(SIGUSR2,ft_check);
-    while(argv[2][i] != '\0')
-    {
-        return_value = send_signal(argv[2][i],pid);
-        if(return_value == -1)
+	int	j;
+	int	return_value;
+
+	j = 8;
+	while (--j >= 0)
 	{
-		ft_check(SIGUSR2);
-		write(1,"\n",1);
+		if ((c >> j) & 1)
+			return_value = kill(pid, SIGUSR1);
+		else
+			return_value = kill(pid, SIGUSR2);
+		usleep(270);
+		if (!g_state_flag)
+			return (-1);
+		g_state_flag = 0;
+	}
+	return (return_value);
+}
+
+void	send_to_server(pid_t pid, char *str, size_t len)
+{
+	int	i;
+	int	return_value;
+
+	i = 0;
+	while (1)
+	{
+		return_value = send_bits(str[i], pid);
+		if (!str[i] || return_value == -1)
+		{
+			send_bits('\n', pid);
+			if (return_value == -1)
+				ft_check(SIGUSR2, len);
+			write(1, "\n", 1);
+			break ;
+		}
+		ft_check(SIGUSR1, len);
+		i++;
+	}
+}
+
+int	main(int argc, char **argv)
+{
+	pid_t				pid;
+	struct sigaction	set;
+	size_t				len;
+
+	len = strlen(argv[2]);
+	if (argc != 3)
+	{
+		printf("\x1b[31mwrong format <./client pid message>\n");
 		return (0);
 	}
-	i++;
-    }
-    send_signal('\n',pid);
-    write(1,"\n",1);
-    return (0);
-    
+	sigemptyset(&set.sa_mask);
+	set.sa_flags = 0;
+	set.sa_handler = set_state_flag;
+	pid = atoi(argv[1]);
+	sigaction(SIGUSR1, &set, NULL);
+	sigaction(SIGUSR2, &set, NULL);
+	send_to_server(pid, argv[2], len);
+	return (0);
 }
