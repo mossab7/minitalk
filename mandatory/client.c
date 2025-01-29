@@ -1,17 +1,17 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   client_bonus.c                                     :+:      :+:    :+:   */
+/*   client.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: mbouhia <marvin@42.fr>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/12/02 15:40:14 by mbouhia           #+#    #+#             */
-/*   Updated: 2024/12/03 20:49:33 by mbouhia          ###   ########.fr       */
+/*   Created: 2024/12/02 15:39:59 by mbouhia           #+#    #+#             */
+/*   Updated: 2024/12/06 09:51:04 by mbouhia          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "includes/ftprintf/ft_printf.h"
-#include "minitalk_bonus.h"
+#include "../includes/libft/libft.h"
+#include "minitalk.h"
 #include <signal.h>
 
 int		g_state_flag;
@@ -22,45 +22,19 @@ void	set_state_flag(int signal)
 	g_state_flag = 1;
 }
 
-void	ft_check(int signal, size_t len)
-{
-	t_bar				bar;
-	unsigned int		i;
-	char				*color;
-	static unsigned int	count;
-
-	if (signal == SIGUSR1)
-		color = "\x1b[32m";
-	else
-		color = "\x1b[31m";
-	bar.bar_width = 50;
-	count++;
-	bar.percentage = (count * 100) / len;
-	bar.pos = (bar.percentage * bar.bar_width) / 100;
-	ft_printf("%s[", color);
-	i = 0;
-	while (i++ < bar.pos)
-		ft_printf("%s#", color);
-	while (i++ < bar.bar_width)
-		ft_printf("%s ", color);
-	ft_printf("%s] %d%%\r", color, bar.percentage);
-	if (signal == SIGUSR2)
-		return ;
-}
-
 int	send_bits(char c, pid_t pid)
 {
-	int	j;
+	int	bit_pos;
 	int	return_value;
 
-	j = 8;
-	while (--j >= 0)
+	bit_pos = 8;
+	while (--bit_pos >= 0)
 	{
-		if ((c >> j) & 1)
+		if ((c >> bit_pos) & 1)
 			return_value = kill(pid, SIGUSR1);
 		else
 			return_value = kill(pid, SIGUSR2);
-		usleep(270);
+		usleep(250);
 		if (!g_state_flag)
 			return (-1);
 		g_state_flag = 0;
@@ -90,24 +64,43 @@ void	send_to_server(pid_t pid, char *str, size_t len)
 	}
 }
 
+int	check_input(int argc, char **argv)
+{
+	size_t	i;
+
+	if (argc != 3)
+	{
+		ft_printf("\x1b[31mwrong format <./client pid message>\n\x1b");
+		return (-1);
+	}
+	i = 0;
+	while (argv[1][i])
+	{
+		if (!ft_isdigit(argv[1][i++]))
+		{
+			ft_printf("\x1b[31minvalid PID\n\x1b");
+			return (-1);
+		}
+	}
+	return (0);
+}
+
 int	main(int argc, char **argv)
 {
 	pid_t				pid;
 	struct sigaction	set;
 	size_t				len;
 
-	len = strlen(argv[2]);
-	if (argc != 3)
-	{
-		printf("\x1b[31mwrong format <./client pid message>\n");
+	if (check_input(argc, argv) == -1)
 		return (0);
-	}
+	len = ft_strlen(argv[2]);
 	sigemptyset(&set.sa_mask);
 	set.sa_flags = 0;
 	set.sa_handler = set_state_flag;
-	pid = atoi(argv[1]);
-	sigaction(SIGUSR1, &set, NULL);
-	sigaction(SIGUSR2, &set, NULL);
+	pid = ft_atoi(argv[1]);
+	if (sigaction(SIGUSR1, &set, NULL) == -1 || sigaction(SIGUSR2, &set,
+			NULL) == -1)
+		return (0);
 	send_to_server(pid, argv[2], len);
 	return (0);
 }

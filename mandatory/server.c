@@ -6,11 +6,11 @@
 /*   By: mbouhia <marvin@42.fr>                     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/12/02 15:40:28 by mbouhia           #+#    #+#             */
-/*   Updated: 2024/12/02 15:40:32 by mbouhia          ###   ########.fr       */
+/*   Updated: 2024/12/05 13:24:51 by mbouhia          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "includes/ftprintf/ft_printf.h"
+#include "../includes/libft/libft.h"
 #include "minitalk.h"
 #include <signal.h>
 
@@ -59,8 +59,9 @@ int	main(void)
 	sigemptyset(&set.sa_mask);
 	set.sa_flags = SA_SIGINFO;
 	set.sa_sigaction = handle_signal;
-	sigaction(SIGUSR1, &set, NULL);
-	sigaction(SIGUSR2, &set, NULL);
+	if (sigaction(SIGUSR1, &set, NULL) == -1 || sigaction(SIGUSR2, &set,
+			NULL) == -1)
+		return (-1);
 	check_signal();
 	return (0);
 }

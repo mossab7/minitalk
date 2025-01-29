@@ -32,4 +32,6 @@ typedef struct s_message
 	int				bits_count;
 	pid_t			last_sender;
 }					t_message;
+
+void				ft_check(int signal, size_t len);
 #endif

@@ -1,40 +1,28 @@
 SERVER = server
 CLIENT = client
-LIBFT = libft.a
 LIBFT_DIR = includes/libft
-CLIENTBONUSSRC = client_bonus.c
-SERVERBONUSSRC = server_bonus.c
-CLIENTSRC = client.c
-SERVERSRC = server.c
+BONUS_DIR = bonus
+MANDATORY_DIR = mandatory
 
-CC = cc
+all: _mandatory_
 
-CFLAGS = -Wall -Wextra -Werror
+_mandatory_:
+	make -C $(MANDATORY_DIR)
+	cp $(MANDATORY_DIR)/$(SERVER) $(MANDATORY_DIR)/$(CLIENT) .
 
-all: $(LIBFT) $(SERVER) $(CLIENT)
+bonus: _bonus_
 
-$(LIBFT):
-	make -C $(LIBFT_DIR)
-
-$(SERVER): $(SERVERSRC)
-	$(CC) $(CFLAGS) $(SERVERSRC) -o $(SERVER) -Lincludes/libft -lft
-
-$(CLIENT): $(CLIENTSRC)
-	$(CC) $(CFLAGS) $(CLIENTSRC) -o $(CLIENT) -Lincludes/libft -lft
-
-bonus: $(SERVER)_bonus $(CLIENT)_bonus
-
-$(SERVER)_bonus: $(SERVERBONUSSRC)
-	$(CC) $(CFLAGS) $(SERVERBONUSSRC) -o $(SERVER) -Lincludes/libft -lft
-
-$(CLIENT)_bonus: $(CLIENTBONUSSRC)
-	$(CC) $(CFLAGS) $(CLIENTBONUSSRC) -o $(CLIENT) -Lincludes/libft -lft
+_bonus_:
+	make -C $(BONUS_DIR)
+	cp $(BONUS_DIR)/$(SERVER) $(BONUS_DIR)/$(CLIENT) .
 
 clean:
 	make -C $(LIBFT_DIR) clean
 
 fclean: clean
 	rm -f $(SERVER) $(CLIENT)
+	rm -f $(MANDATORY_DIR)/$(SERVER) $(MANDATORY_DIR)/$(CLIENT)
+	rm -f $(BONUS_DIR)/$(SERVER) $(BONUS_DIR)/$(CLIENT)
 
 re: fclean all
 
